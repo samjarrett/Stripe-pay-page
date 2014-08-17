@@ -5,47 +5,51 @@ require(__DIR__ . '/vendor/autoload.php');
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-$request = Request::createFromGlobals();
+$app = new Silex\Application();
 
-$controller = function() use ($request) {
-	$pathInfo = ltrim($request->getPathInfo(), '/');
-	if (empty($pathInfo)) {
-		$pathInfo = 'index';
-	}
-
-	return $pathInfo;
-};
-
-$loader = new Twig_Loader_Filesystem(realpath(__DIR__ . '/templates'));
-$twig = new Twig_Environment($loader, array(
-	'cache' => realpath(__DIR__ . '/cache'),
-	'debug' => true,
+$app->register(new Silex\Provider\TwigServiceProvider(), array(
+    'twig.path' => __DIR__.'/templates',
 ));
 
-if ($twig->isDebug()) {
-	$twig->addExtension(new Twig_Extension_Debug());
-}
+$app['globals'] = require('globals.php');
 
-$response = new Response;
-try {
-	$controller = call_user_func($controller);
-	$globals = require('globals.php');
+$app->get('/', function (Request $request) use ($app) {
+    return $app['twig']->render('index.html.twig', array());
+});
 
-	$controllers = require('controllers.php');
-	$templateData = array('request' => $request, 'globals' => $globals);
-	if (array_key_exists($controller, $controllers) && is_callable($controllers[$controller])) {
-		$templateData = array_merge($templateData, call_user_func($controllers[$controller]));
+$app->post('/charge', function (Request $request) use ($app) {
+	$amount = $request->request->get('amount');
+	$description = $request->request->get('description');
+	$token = $request->request->get('token');
+	$emailAddress = $request->request->get('emailAddress');
+
+	try {
+		Stripe::setApiKey($app['globals']['stripe']['secretKey']);
+		$charge = Stripe_Charge::create(array(
+			'amount' => intval($amount * 100),
+			'currency' => $app['globals']['currency'],
+			'card' => $token,
+			'description' => $description,
+			'capture' => false
+		));
+		$return = array(
+			'success' => true,
+			'email' => $emailAddress,
+			'description' => $description,
+			'amount' => $charge->amount,
+			'currency' => $charge->currency,
+			'card' => array(
+				'last4' => $charge->card->last4,
+				'type' => $charge->card->brand,
+			),
+		);
+	} catch (Stripe_CardError $e) {
+		$body = $e->getJsonBody();
+		$err  = $body['error'];
+		$return = array('success' => false, 'error' => $err['message']);
 	}
-	$template = $twig->loadTemplate($controller . '.html.twig');
-	$response->setContent($template->render($templateData));
-} catch (\Twig_Error_Loader $e) {
-	$response->setStatusCode(404);
-	$template = $twig->loadTemplate('error.html.twig');
-	$response->setContent($template->render(array('title' => $e->getMessage())));
-} catch (\Exception $e) {
-	$response->setStatusCode(500);
-	$template = $twig->loadTemplate('error.html.twig');
-	$response->setContent($template->render(array('title' => $e->getMessage())));
-}
 
-$response->send();
+    return $app['twig']->render('charge.html.twig', $return);
+});
+
+$app->run();

@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
-	<form action="{{ request.basePath }}/charge" method="POST">
+	<form action="{{ app.request.basePath }}/charge" method="POST">
 		<input type="hidden" name="token" class="token" value="">
 		<input type="hidden" name="emailAddress" class="email-address" value="">
 
@@ -29,10 +29,10 @@
 <script>
 	$(function() {
 		var handler = StripeCheckout.configure({
-			key: {{ globals.stripe.publicKey|json_encode|raw }},
-			image: '{{ request.basePath }}/images/logo.jpg',
-			name: {{ globals.name|json_encode|raw }},
-			currency: {{ globals.currency|json_encode|raw }},
+			key: {{ app.globals.stripe.publicKey|json_encode|raw }},
+			image: '{{ app.request.basePath }}/images/logo.jpg',
+			name: {{ app.globals.name|json_encode|raw }},
+			currency: {{ app.globals.currency|json_encode|raw }},
 			token: function (token) {
 				var $form = $('.pay-button').closest('form');
 				$form.off('submit');
