@@ -1,0 +1,10 @@
+<?php
+
+return array(
+	'stripe' => array(
+		'publicKey' => '[VALUE HERE]',
+		'secretKey' => '[VALUE HERE]'
+	),
+	'name' => 'Sam\'s Consultancy',
+	'currency' => 'AUD',
+);

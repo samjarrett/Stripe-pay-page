@@ -1,0 +1,8 @@
+{
+	"require": {
+		"symfony/http-foundation": "~2.4",
+		"mandrill/mandrill": "@stable",
+		"twig/twig": "@stable",
+		"stripe/stripe-php": "~1.17"
+	}
+}
