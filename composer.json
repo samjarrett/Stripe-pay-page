@@ -1,6 +1,6 @@
 {
 	"require": {
-		"silex/silex": "~1.2",
+		"silex/silex": "~2.2",
 		"twig/twig": "@stable",
 		"stripe/stripe-php": "~1.17"
 	}
